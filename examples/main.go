@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"strings"
 
 	gptj "github.com/go-skynet/go-gpt4all-j.cpp"
@@ -22,7 +21,7 @@ func main() {
 
 	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	flags.StringVar(&model, "m", "./models/7B/ggml-model-q4_0.bin", "path to q4_0.bin model file to load")
-	flags.IntVar(&threads, "t", runtime.NumCPU(), "number of threads to use during computation")
+	flags.IntVar(&threads, "t", 7, "number of threads to use during computation")
 	flags.IntVar(&tokens, "n", 128, "number of tokens to predict")
 
 	err := flags.Parse(os.Args[1:])

@@ -34,8 +34,8 @@ endif
 #
 
 # keep standard at C11 and C++11
-CFLAGS   = -I.  -I./gpt4all-j -I./gpt4all-j/ggml/examples -I./gpt4all-j/ggml/include -I./gpt4all-j/ggml/include/ggml          -O3 -DNDEBUG -std=c11   -fPIC
-CXXFLAGS = -I. -I./gpt4all-j -I./gpt4all-j/ggml/examples -I./gpt4all-j/ggml/include -I./gpt4all-j/ggml/include/ggml -O3 -DNDEBUG -std=c++11 -fPIC
+CFLAGS   = -I. -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/ -I -O3 -DNDEBUG -std=c11 -fPIC
+CXXFLAGS = -I. -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/ -O3 -DNDEBUG -std=c++17 -fPIC
 LDFLAGS  =
 
 # warnings
@@ -136,25 +136,28 @@ $(info I CC:       $(CCV))
 $(info I CXX:      $(CXXV))
 $(info )
 
-
 ggml.o:
-	$(CC)  $(CFLAGS) -c gpt4all-j/ggml/src/ggml.c -o ggml.o
-
-gptj.o:
-	$(CC)  $(CFLAGS) -c gpt4all-j/gptj.cpp -o gptj.o
+	$(CC) $(CFLAGS) -c gpt4all-j/ggml/src/ggml.c -o ggml.o
 
 utils.o:
-	$(CC)  $(CFLAGS) -c gpt4all-j/ggml/examples/utils.cpp -o utils.o
+	$(CXX) $(CXXFLAGS) -c gpt4all-j/ggml/examples/utils.cpp -o utils.o
 
-binding.o: ggml.o gptj.o utils.o
-	$(CXX) $(CXXFLAGS) binding.cpp ggml.o utils.o -o binding.o -c $(LDFLAGS)
+clean:
+	rm -f *.o
+	rm -f *.a
 
-libbinding.a: binding.o
-	ar src libbinding.a binding.o gptj.o ggml.o utils.o
+gptj.o: gptj.cpp ggml.o utils.o
+	$(CXX) $(CXXFLAGS) gptj.cpp ggml.o utils.o -o gptj.o -c $(LDFLAGS)
+
+libgptj.a: gptj.o ggml.o utils.o
+	ar src libgptj.a gptj.o ggml.o utils.o
 
 clean:
 	rm -rf *.o
 	rm -rf *.a
 
-test: libbinding.a
+build: 
+	@C_INCLUDE_PATH=${INCLUDE_PATH} LIBRARY_PATH=${LIBRARY_PATH} go build -o test -x ./examples
+
+test: libgptj.a
 	@C_INCLUDE_PATH=${INCLUDE_PATH} LIBRARY_PATH=${LIBRARY_PATH} go test -v ./...

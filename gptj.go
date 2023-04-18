@@ -1,9 +1,10 @@
 package gptj
 
-// #cgo CXXFLAGS: -I./gpt4all-j/ggml/include -I./gpt4all-j/ggml/include/ggml -I./gpt4all-j -I./gpt4all-j/ggml/examples -I./gpt4all-j/ggml
-// #cgo LDFLAGS: -L./ -l:libbinding.a -lm -lstdc++
+// #cgo CFLAGS: -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/
+// #cgo CXXFLAGS: -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/
 // #cgo darwin LDFLAGS: -framework Accelerate
-// #include "binding.h"
+// #cgo LDFLAGS: -lgptj -lm -lstdc++
+// #include <gptj.h>
 import "C"
 import (
 	"fmt"
@@ -15,11 +16,10 @@ type GPTJ struct {
 	state unsafe.Pointer
 }
 
-func New(model string, opts ...ModelOption) (*GPTJ, error) {
-	mo := NewModelOptions(opts...)
+func New(model string) (*GPTJ, error) {
 	state := C.gptj_allocate_state()
 	modelPath := C.CString(model)
-	result := C.gptj_bootstrap(modelPath, state, C.int(mo.ContextSize))
+	result := C.gptj_bootstrap(modelPath, state)
 	if result != 0 {
 		return nil, fmt.Errorf("failed loading model")
 	}

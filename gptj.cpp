@@ -77,26 +77,6 @@ struct gptj_state {
     } timing;
 };
 
-
-
-#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
-#include <signal.h>
-#include <unistd.h>
-#elif defined (_WIN32)
-#include <signal.h>
-#endif
-
-#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__)) || defined (_WIN32)
-void sigint_handler(int signo) {
-    if (signo == SIGINT) {
-            _exit(130);
-    }
-}
-#endif
-
-
-
-
 // load the model's weights from a file
 bool gptj_model_load(const std::string &fname, std::istream &fin, gptj_model & model, gpt_vocab & vocab) {
     printf("%s: loading model from '%s' - please wait ...\n", __func__, fname.c_str());

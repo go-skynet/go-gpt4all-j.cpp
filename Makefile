@@ -125,7 +125,7 @@ endif
 # Print build information
 #
 
-$(info I llama.cpp build info: )
+$(info I go-gpt4all-j build info: )
 $(info I UNAME_S:  $(UNAME_S))
 $(info I UNAME_P:  $(UNAME_P))
 $(info I UNAME_M:  $(UNAME_M))
@@ -136,8 +136,10 @@ $(info I CC:       $(CCV))
 $(info I CXX:      $(CXXV))
 $(info )
 
+
 ggml.o:
-	$(CC) $(CFLAGS) -c gpt4all-j/ggml/src/ggml.c -o ggml.o
+	mkdir build
+	cd build && cmake ../gpt4all-j/ggml && make VERBOSE=1 ggml && cp -rf src/CMakeFiles/ggml.dir/ggml.c.o ../ggml.o
 
 utils.o:
 	$(CXX) $(CXXFLAGS) -c gpt4all-j/ggml/examples/utils.cpp -o utils.o
@@ -145,6 +147,8 @@ utils.o:
 clean:
 	rm -f *.o
 	rm -f *.a
+	rm -rf build
+	rm -rf example
 
 gptj.o: gptj.cpp ggml.o utils.o
 	$(CXX) $(CXXFLAGS) gptj.cpp ggml.o utils.o -o gptj.o -c $(LDFLAGS)
@@ -152,12 +156,8 @@ gptj.o: gptj.cpp ggml.o utils.o
 libgptj.a: gptj.o ggml.o utils.o
 	ar src libgptj.a gptj.o ggml.o utils.o
 
-clean:
-	rm -rf *.o
-	rm -rf *.a
-
-build: 
-	@C_INCLUDE_PATH=${INCLUDE_PATH} LIBRARY_PATH=${LIBRARY_PATH} go build -o test -x ./examples
+example: 
+	@C_INCLUDE_PATH=${INCLUDE_PATH} LIBRARY_PATH=${LIBRARY_PATH} go build -o example -x ./examples
 
 test: libgptj.a
 	@C_INCLUDE_PATH=${INCLUDE_PATH} LIBRARY_PATH=${LIBRARY_PATH} go test -v ./...

@@ -48,11 +48,12 @@ func (l *GPTJ) Predict(text string, opts ...PredictOption) (string, error) {
 	res = strings.TrimPrefix(res, " ")
 	res = strings.TrimPrefix(res, text)
 	res = strings.TrimPrefix(res, "\n")
-
+	res = strings.TrimSuffix(res, "<|endoftext|>")
 	C.gptj_free_params(params)
 
 	return res, nil
 }
+
 func (l *GPTJ) Free() {
 	C.gptj_free_model(l.state)
 }

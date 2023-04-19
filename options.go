@@ -1,7 +1,5 @@
 package gptj
 
-import "runtime"
-
 type PredictOptions struct {
 	Seed, Threads, Tokens, TopK, Batch int
 	TopP, Temperature                  float64
@@ -11,12 +9,12 @@ type PredictOption func(p *PredictOptions)
 
 var DefaultOptions PredictOptions = PredictOptions{
 	Seed:        -1,
-	Threads:     runtime.NumCPU(),
-	Tokens:      128,
-	TopK:        10000,
+	Threads:     4,
+	Tokens:      200,
+	TopK:        40,
 	TopP:        0.90,
 	Temperature: 0.96,
-	Batch:       8,
+	Batch:       9,
 }
 
 // SetSeed sets the random seed for sampling text generation.

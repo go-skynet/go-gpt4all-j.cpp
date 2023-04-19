@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestLLaMa(t *testing.T) {
+func TestGPT(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "go-llama.cpp test suite")
+	RunSpecs(t, "go-gpt4all-j test suite")
 }

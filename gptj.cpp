@@ -96,15 +96,10 @@ void sigint_handler(int signo) {
 
 
 
-// load the model's weights from a file
-bool gptj_model_load(const std::string & fname, gptj_model & model, gpt_vocab & vocab) {
-    printf("%s: loading model from '%s' - please wait ...\n", __func__, fname.c_str());
 
-  auto fin = std::ifstream(fname, std::ios::binary);
-    if (!fin) {
-        fprintf(stderr, "%s: failed to open '%s'\n", __func__, fname.c_str());
-        return false;
-    }
+// load the model's weights from a file
+bool gptj_model_load(const std::string &fname, std::istream &fin, gptj_model & model, gpt_vocab & vocab) {
+    printf("%s: loading model from '%s' - please wait ...\n", __func__, fname.c_str());
 
     // verify magic
     {
@@ -122,14 +117,11 @@ bool gptj_model_load(const std::string & fname, gptj_model & model, gpt_vocab & 
 
         fin.read((char *) &hparams.n_vocab, sizeof(hparams.n_vocab));
         fin.read((char *) &hparams.n_ctx,   sizeof(hparams.n_ctx));
-
         fin.read((char *) &hparams.n_embd,  sizeof(hparams.n_embd));
         fin.read((char *) &hparams.n_head,  sizeof(hparams.n_head));
         fin.read((char *) &hparams.n_layer, sizeof(hparams.n_layer));
         fin.read((char *) &hparams.n_rot,   sizeof(hparams.n_rot));
         fin.read((char *) &hparams.f16,     sizeof(hparams.f16));
-
-        //hparams.n_ctx = n_ctx;
 
         printf("%s: n_vocab = %d\n", __func__, hparams.n_vocab);
         printf("%s: n_ctx   = %d\n", __func__, hparams.n_ctx);
@@ -217,8 +209,8 @@ bool gptj_model_load(const std::string & fname, gptj_model & model, gpt_vocab & 
         ctx_size += n_layer*(4*n_embd*n_embd*ggml_type_sizef(wtype));         // c_mlp_proj_w
         ctx_size += n_layer*(         n_embd*ggml_type_sizef(GGML_TYPE_F32)); // c_mlp_proj_b
 
-        ctx_size += n_ctx*n_layer*n_embd*ggml_type_sizef(GGML_TYPE_F16); // memory_k
-        ctx_size += n_ctx*n_layer*n_embd*ggml_type_sizef(GGML_TYPE_F16); // memory_v
+        ctx_size += n_ctx*n_layer*n_embd*ggml_type_sizef(GGML_TYPE_F32); // memory_k
+        ctx_size += n_ctx*n_layer*n_embd*ggml_type_sizef(GGML_TYPE_F32); // memory_v
 
         ctx_size += (5 + 10*n_layer)*256; // object overhead
 
@@ -230,7 +222,6 @@ bool gptj_model_load(const std::string & fname, gptj_model & model, gpt_vocab & 
         struct ggml_init_params params = {
             .mem_size   = ctx_size,
             .mem_buffer = NULL,
-            .no_alloc   = false,
         };
 
         model.ctx = ggml_init(params);
@@ -315,8 +306,8 @@ bool gptj_model_load(const std::string & fname, gptj_model & model, gpt_vocab & 
         const int n_mem      = n_layer*n_ctx;
         const int n_elements = n_embd*n_mem;
 
-        model.memory_k = ggml_new_tensor_1d(ctx, GGML_TYPE_F16, n_elements);
-        model.memory_v = ggml_new_tensor_1d(ctx, GGML_TYPE_F16, n_elements);
+        model.memory_k = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_elements);
+        model.memory_v = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_elements);
 
         const size_t memory_size = ggml_nbytes(model.memory_k) + ggml_nbytes(model.memory_v);
 
@@ -343,12 +334,10 @@ bool gptj_model_load(const std::string & fname, gptj_model & model, gpt_vocab & 
                 break;
             }
 
-            int64_t nelements = 1;
-            int64_t ne[2] = { 1, 1 };
+            int32_t nelements = 1;
+            int32_t ne[2] = { 1, 1 };
             for (int i = 0; i < n_dims; ++i) {
-                int32_t ne_cur;
-                fin.read(reinterpret_cast<char *>(&ne_cur), sizeof(ne_cur));
-                ne[i] = ne_cur;
+                fin.read(reinterpret_cast<char *>(&ne[i]), sizeof(ne[i]));
                 nelements *= ne[i];
             }
 
@@ -367,14 +356,14 @@ bool gptj_model_load(const std::string & fname, gptj_model & model, gpt_vocab & 
             }
 
             if (tensor->ne[0] != ne[0] || tensor->ne[1] != ne[1]) {
-                fprintf(stderr, "%s: tensor '%s' has wrong shape in model file: got [%lld, %lld], expected [%lld, %lld]\n",
+                fprintf(stderr, "%s: tensor '%s' has wrong shape in model file: got [%d, %d], expected [%d, %d]\n",
                         __func__, name.data(), tensor->ne[0], tensor->ne[1], ne[0], ne[1]);
                 return false;
             }
 
             if (0) {
                 static const char * ftype_str[] = { "f32", "f16", "q4_0", "q4_1", };
-                printf("%24s - [%5lld, %5lld], type = %6s, %6.2f MB, %9zu bytes\n", name.data(), ne[0], ne[1], ftype_str[ftype], ggml_nbytes(tensor)/1024.0/1024.0, ggml_nbytes(tensor));
+                printf("%24s - [%5d, %5d], type = %6s, %6.2f MB, %9zu bytes\n", name.data(), ne[0], ne[1], ftype_str[ftype], ggml_nbytes(tensor)/1024.0/1024.0, ggml_nbytes(tensor));
             }
 
             size_t bpe = 0;
@@ -392,7 +381,7 @@ bool gptj_model_load(const std::string & fname, gptj_model & model, gpt_vocab & 
             };
 
             if ((nelements*bpe)/ggml_blck_size(tensor->type) != ggml_nbytes(tensor)) {
-                fprintf(stderr, "%s: tensor '%s' has wrong size in model file: got %zu, expected %llu\n",
+                fprintf(stderr, "%s: tensor '%s' has wrong size in model file: got %zu, expected %zu\n",
                         __func__, name.data(), ggml_nbytes(tensor), nelements*bpe);
                 return false;
             }
@@ -692,14 +681,14 @@ int gptj_predict(void* params_ptr, void* state_pr, char* result) {
     for (int i = embd.size(); i < embd_inp.size() + params.n_predict; i++) {
         // predict
         if (embd.size() > 0) {
-            const int64_t t_start_us = ggml_time_us();
+      //      const int64_t t_start_us = ggml_time_us();
 
             if (!gptj_eval(model, params.n_threads, n_past, embd, logits, mem_per_token)) {
                 printf("Failed to predict\n");
                 return 1;
             }
 
-            t_predict_us += ggml_time_us() - t_start_us;
+     //       t_predict_us += ggml_time_us() - t_start_us;
         }
 
         n_past += embd.size();
@@ -738,16 +727,15 @@ int gptj_predict(void* params_ptr, void* state_pr, char* result) {
 
         // display text
         for (auto id : embd) {
-
             res += vocab.id_to_token[id].c_str();
         }
-        fflush(stdout);
 
         // end of text token
         if (embd.back() == 50256) {
             break;
         }
     }
+/*
 
     // report timing
     {
@@ -760,10 +748,26 @@ int gptj_predict(void* params_ptr, void* state_pr, char* result) {
         printf("%s:  predict time = %8.2f ms / %.2f ms per token\n", __func__, t_predict_us/1000.0f, t_predict_us/1000.0f/n_past);
        // printf("%s:    total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us)/1000.0f);
     }
+
+    */
     strcpy(result, res.c_str()); 
     //ggml_free(model.ctx);
 
     return 0;
+}
+
+// load the model's weights from a file path
+bool model_load(const std::string & fname, gptj_model & model, gpt_vocab & vocab) {
+
+    auto fin = std::ifstream(fname, std::ios::binary);
+    if (!fin) {
+        fprintf(stderr, "%s: failed to open '%s'\n", __func__, fname.c_str());
+        return false;
+    }
+
+    bool loaded = gptj_model_load(fname, fin, model, vocab);
+    fin.close();
+    return loaded;
 }
 
 int gptj_bootstrap(const char *model_path, void* state_pr)
@@ -773,7 +777,7 @@ int gptj_bootstrap(const char *model_path, void* state_pr)
     gptj_state* state = (gptj_state*) state_pr;
 
     const int64_t t_start_us = ggml_time_us();
-    if (!gptj_model_load(model_path, state->model, state->vocab)) {
+    if (!model_load(model_path, state->model, state->vocab)) {
         fprintf(stderr, "%s: failed to load model from '%s'\n", __func__, model_path);
         return 1;
     }

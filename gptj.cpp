@@ -401,8 +401,6 @@ bool gptj_model_load(const std::string &fname, std::istream &fin, gptj_model & m
         printf("%s: model size = %8.2f MB / num tensors = %d\n", __func__, total_size/1024.0/1024.0, n_tensors);
     }
 
-    fin.close();
-
 
     return true;
 }

@@ -1,5 +1,6 @@
 INCLUDE_PATH := $(abspath ./)
 LIBRARY_PATH := $(abspath ./)
+CMAKEFLAGS=
 
 ifndef UNAME_S
 UNAME_S := $(shell uname -s)
@@ -132,6 +133,7 @@ $(info I UNAME_M:  $(UNAME_M))
 $(info I CFLAGS:   $(CFLAGS))
 $(info I CXXFLAGS: $(CXXFLAGS))
 $(info I LDFLAGS:  $(LDFLAGS))
+$(info I CMAKEFLAGS:  $(CMAKEFLAGS))
 $(info I CC:       $(CCV))
 $(info I CXX:      $(CXXV))
 $(info )
@@ -139,7 +141,10 @@ $(info )
 
 ggml.o:
 	mkdir build
-	cd build && cmake ../gpt4all-j/ggml && make VERBOSE=1 ggml && cp -rf src/CMakeFiles/ggml.dir/ggml.c.o ../ggml.o
+	cd build && cmake ../gpt4all-j/ggml $(CMAKEFLAGS) && make VERBOSE=1 ggml && cp -rf src/CMakeFiles/ggml.dir/ggml.c.o ../ggml.o
+
+generic-ggml.o:
+	$(CC) $(CFLAGS) -c gpt4all-j/ggml/src/ggml.c -o ggml.o
 
 utils.o:
 	$(CXX) $(CXXFLAGS) -c gpt4all-j/ggml/examples/utils.cpp -o utils.o
@@ -154,6 +159,12 @@ gptj.o: gptj.cpp ggml.o utils.o
 	$(CXX) $(CXXFLAGS) gptj.cpp ggml.o utils.o -o gptj.o -c $(LDFLAGS)
 
 libgptj.a: gptj.o ggml.o utils.o
+	ar src libgptj.a gptj.o ggml.o utils.o
+
+generic-gptj.o: gptj.cpp generic-ggml.o utils.o
+	$(CXX) $(CXXFLAGS) gptj.cpp ggml.o utils.o -o gptj.o -c $(LDFLAGS)
+
+generic-libgptj.a: gptj.o generic-ggml.o utils.o
 	ar src libgptj.a gptj.o ggml.o utils.o
 
 example: 

@@ -164,7 +164,7 @@ libgptj.a: gptj.o ggml.o utils.o
 generic-gptj.o: gptj.cpp generic-ggml.o utils.o
 	$(CXX) $(CXXFLAGS) gptj.cpp ggml.o utils.o -o gptj.o -c $(LDFLAGS)
 
-generic-libgptj.a: gptj.o generic-ggml.o utils.o
+generic-libgptj.a: generic-gptj.o generic-ggml.o utils.o
 	ar src libgptj.a gptj.o ggml.o utils.o
 
 example: 

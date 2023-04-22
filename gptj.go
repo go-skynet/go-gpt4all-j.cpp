@@ -3,6 +3,7 @@ package gptj
 // #cgo CFLAGS: -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/
 // #cgo CXXFLAGS: -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/
 // #cgo darwin LDFLAGS: -framework Accelerate
+// #cgo darwin CXXFLAGS: -std=c++17
 // #cgo LDFLAGS: -lgptj -lm -lstdc++
 // #include <gptj.h>
 import "C"

@@ -29,7 +29,7 @@ func main() {
 		fmt.Printf("Parsing program arguments failed: %s", err)
 		os.Exit(1)
 	}
-	l, err := gptj.New(model)
+	l, err := gptj.New(model, gptj.SetThreads(threads))
 	if err != nil {
 		fmt.Println("Loading the model failed:", err.Error())
 		os.Exit(1)
@@ -41,7 +41,7 @@ func main() {
 	for {
 		text := readMultiLineInput(reader)
 
-		res, err := l.Predict(text, gptj.SetTokens(tokens), gptj.SetThreads(threads))
+		res, err := l.Predict(text, gptj.SetTokens(tokens))
 		if err != nil {
 			panic(err)
 		}

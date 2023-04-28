@@ -1,15 +1,17 @@
 package gptj
 
-// #cgo CFLAGS: -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/
-// #cgo CXXFLAGS: -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/
+// #cgo CFLAGS: -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/ -I./gpt4all-j/llmodel -I./ -I./gpt4all-j/llmodel/llama.cpp/
+// #cgo CXXFLAGS: -std=c++17 -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/ -I./gpt4all-j/llmodel -I./ -I./gpt4all-j/llmodel/llama.cpp/
 // #cgo darwin LDFLAGS: -framework Accelerate
 // #cgo darwin CXXFLAGS: -std=c++17
 // #cgo LDFLAGS: -lgptj -lm -lstdc++
-// #include <gptj.h>
+// #include <binding.h>
 import "C"
 import (
 	"fmt"
+	"runtime"
 	"strings"
+	"sync"
 	"unsafe"
 )
 
@@ -17,15 +19,21 @@ type GPTJ struct {
 	state unsafe.Pointer
 }
 
-func New(model string) (*GPTJ, error) {
-	state := C.gptj_allocate_state()
-	modelPath := C.CString(model)
-	result := C.gptj_bootstrap(modelPath, state)
-	if result != 0 {
+func New(model string, opts ...ModelOption) (*GPTJ, error) {
+	ops := NewModelOptions(opts...)
+
+	state := C.load_gptj_model(C.CString(model), C.int(ops.Threads))
+	if state == nil {
 		return nil, fmt.Errorf("failed loading model")
 	}
 
-	return &GPTJ{state: state}, nil
+	gpt := &GPTJ{state: state}
+	// set a finalizer to remove any callbacks when the struct is reclaimed by the garbage collector.
+	runtime.SetFinalizer(gpt, func(g *GPTJ) {
+		setCallback(g.state, nil)
+	})
+
+	return gpt, nil
 }
 
 func (l *GPTJ) Predict(text string, opts ...PredictOption) (string, error) {
@@ -37,24 +45,59 @@ func (l *GPTJ) Predict(text string, opts ...PredictOption) (string, error) {
 		po.Tokens = 99999999
 	}
 	out := make([]byte, po.Tokens)
+	// void* gptj_new_context( int repeat_last_n, int repeat_penalty, int n_ctx, int tokens, int top_k,
+	// float top_p, float temp, int n_batch) ;
+	//
+	ctx := C.gptj_new_context(C.int(po.RepeatLastN), C.int(po.RepeatPenalty), C.int(po.ContextSize),
+		C.int(po.Tokens), C.int(po.TopK), C.float(po.TopP), C.float(po.Temperature), C.int(po.Batch))
 
-	params := C.gptj_allocate_params(input, C.int(po.Seed), C.int(po.Threads), C.int(po.Tokens), C.int(po.TopK),
-		C.float(po.TopP), C.float(po.Temperature), C.int(po.Batch))
-	ret := C.gptj_predict(params, l.state, (*C.char)(unsafe.Pointer(&out[0])))
-	if ret != 0 {
-		return "", fmt.Errorf("inference failed")
-	}
+	C.binding_model_prompt(input, l.state, ctx, (*C.char)(unsafe.Pointer(&out[0])))
+
 	res := C.GoString((*C.char)(unsafe.Pointer(&out[0])))
 
 	res = strings.TrimPrefix(res, " ")
 	res = strings.TrimPrefix(res, text)
 	res = strings.TrimPrefix(res, "\n")
 	res = strings.TrimSuffix(res, "<|endoftext|>")
-	C.gptj_free_params(params)
+	C.gptj_free_ctx(ctx)
 
 	return res, nil
 }
 
 func (l *GPTJ) Free() {
-	C.gptj_free_model(l.state)
+	C.llama_free_model(l.state)
+}
+
+func (l *GPTJ) SetTokenCallback(callback func(token string) bool) {
+	setCallback(l.state, callback)
+}
+
+var (
+	m         sync.Mutex
+	callbacks = map[uintptr]func(string) bool{}
+)
+
+//export tokenCallback
+func tokenCallback(statePtr unsafe.Pointer, token *C.char) bool {
+	m.Lock()
+	defer m.Unlock()
+
+	if callback, ok := callbacks[uintptr(statePtr)]; ok {
+		return callback(C.GoString(token))
+	}
+
+	return true
+}
+
+// setCallback can be used to register a token callback for LLama. Pass in a nil callback to
+// remove the callback.
+func setCallback(statePtr unsafe.Pointer, callback func(string) bool) {
+	m.Lock()
+	defer m.Unlock()
+
+	if callback == nil {
+		delete(callbacks, uintptr(statePtr))
+	} else {
+		callbacks[uintptr(statePtr)] = callback
+	}
 }

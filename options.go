@@ -1,34 +1,19 @@
 package gptj
 
 type PredictOptions struct {
-	Seed, Threads, Tokens, TopK, Batch int
-	TopP, Temperature                  float64
+	RepeatPenalty, ContextSize, RepeatLastN, Tokens, TopK, Batch int
+	TopP, Temperature                                            float64
 }
 
 type PredictOption func(p *PredictOptions)
 
 var DefaultOptions PredictOptions = PredictOptions{
-	Seed:        -1,
-	Threads:     4,
 	Tokens:      200,
 	TopK:        40,
 	TopP:        0.90,
 	Temperature: 0.96,
 	Batch:       9,
-}
-
-// SetSeed sets the random seed for sampling text generation.
-func SetSeed(seed int) PredictOption {
-	return func(p *PredictOptions) {
-		p.Seed = seed
-	}
-}
-
-// SetThreads sets the number of threads to use for text generation.
-func SetThreads(threads int) PredictOption {
-	return func(p *PredictOptions) {
-		p.Threads = threads
-	}
+	ContextSize: 1024,
 }
 
 // SetTokens sets the number of tokens to generate.
@@ -69,6 +54,31 @@ func SetBatch(size int) PredictOption {
 // Create a new PredictOptions object with the given options.
 func NewPredictOptions(opts ...PredictOption) PredictOptions {
 	p := DefaultOptions
+	for _, opt := range opts {
+		opt(&p)
+	}
+	return p
+}
+
+var DefaultModelOptions ModelOptions = ModelOptions{
+	Threads: 4,
+}
+
+type ModelOptions struct {
+	Threads int
+}
+type ModelOption func(p *ModelOptions)
+
+// SetThreads sets the number of threads to use for text generation.
+func SetThreads(c int) ModelOption {
+	return func(p *ModelOptions) {
+		p.Threads = c
+	}
+}
+
+// Create a new PredictOptions object with the given options.
+func NewModelOptions(opts ...ModelOption) ModelOptions {
+	p := DefaultModelOptions
 	for _, opt := range opts {
 		opt(&p)
 	}

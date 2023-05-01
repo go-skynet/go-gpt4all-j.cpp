@@ -35,8 +35,8 @@ endif
 #
 
 # keep standard at C11 and C++11
-CFLAGS   = -I. -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/ -I -O3 -DNDEBUG -std=c11 -fPIC
-CXXFLAGS = -I. -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/ -O3 -DNDEBUG -std=c++17 -fPIC
+CFLAGS   = -I. -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/ -I./gpt4all-j/llmodel -I./gpt4all-j/llmodel/llama.cpp  -I -O3 -DNDEBUG -std=c11 -fPIC
+CXXFLAGS = -I. -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/ -I./gpt4all-j/llmodel -I./gpt4all-j/llmodel/llama.cpp -O3 -DNDEBUG -std=c++17 -fPIC
 LDFLAGS  =
 
 # warnings
@@ -139,9 +139,19 @@ $(info I CXX:      $(CXXV))
 $(info )
 
 
-ggml.o:
-	mkdir build
-	cd build && cmake ../gpt4all-j/ggml $(CMAKEFLAGS) && make VERBOSE=1 ggml && cp -rf src/CMakeFiles/ggml.dir/ggml.c.o ../ggml.o
+llama.o:
+	mkdir buildllama
+	cd buildllama && cmake ../gpt4all-j/llmodel/llama.cpp $(CMAKEFLAGS) && make VERBOSE=1 llama.o && cp -rf CMakeFiles/llama.dir/llama.cpp.o ../llama.o
+
+llmodel.o:
+	mkdir buildllm
+	cd buildllm && cmake ../gpt4all-j/llmodel $(CMAKEFLAGS) && make VERBOSE=1 llmodel ggml common
+	cd buildllm && cp -rf CMakeFiles/llmodel.dir/llmodel_c.cpp.o ../llmodel.o
+	cd buildllm && cp -rfv CMakeFiles/llmodel.dir/llama.cpp/examples/common.cpp.o ../common.o
+	cd buildllm && cp -rf CMakeFiles/llmodel.dir/gptj.cpp.o ../gptj.o
+	cd buildllm && cp -rf CMakeFiles/llmodel.dir/llamamodel.cpp.o ../llamamodel.o
+	cd buildllm && cp -rf CMakeFiles/llmodel.dir/utils.cpp.o ../utils.o
+	cd buildllm && cp -rf llama.cpp/CMakeFiles/ggml.dir/ggml.c.o ../ggml.o
 
 generic-ggml.o:
 	$(CC) $(CFLAGS) -c gpt4all-j/ggml/src/ggml.c -o ggml.o
@@ -153,13 +163,18 @@ clean:
 	rm -f *.o
 	rm -f *.a
 	rm -rf build
+	rm -rf buildllm
+	rm -rf buildllama
 	rm -rf example
 
 gptj.o: gptj.cpp ggml.o utils.o
 	$(CXX) $(CXXFLAGS) gptj.cpp ggml.o utils.o -o gptj.o -c $(LDFLAGS)
 
-libgptj.a: gptj.o ggml.o utils.o
-	ar src libgptj.a gptj.o ggml.o utils.o
+binding.o: 
+	$(CXX) $(CXXFLAGS) binding.cpp -o binding.o -c $(LDFLAGS)
+
+libgptj.a: binding.o llmodel.o llama.o
+	ar src libgptj.a ggml.o common.o llama.o llamamodel.o utils.o llmodel.o gptj.o binding.o
 
 generic-gptj.o: gptj.cpp generic-ggml.o utils.o
 	$(CXX) $(CXXFLAGS) gptj.cpp ggml.o utils.o -o gptj.o -c $(LDFLAGS)

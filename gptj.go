@@ -1,6 +1,6 @@
 package gptj
 
-// #cgo CFLAGS: -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/ -I./gpt4all-j/llmodel -I./ -I./gpt4all-j/llmodel/llama.cpp/
+// #cgo CFLAGS: -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/ -I./gpt4all-j/llmodel -I./gpt4all-j/llmodel/llama.cpp/ -I./
 // #cgo CXXFLAGS: -std=c++17 -I./gpt4all-j/ggml/include/ggml/ -I./gpt4all-j/ggml/examples/ -I./gpt4all-j/llmodel -I./ -I./gpt4all-j/llmodel/llama.cpp/
 // #cgo darwin LDFLAGS: -framework Accelerate
 // #cgo darwin CXXFLAGS: -std=c++17

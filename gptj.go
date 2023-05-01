@@ -15,6 +15,8 @@ import (
 	"unsafe"
 )
 
+// The following code is https://github.com/go-skynet/go-llama.cpp/blob/master/llama.go with small changes
+
 type GPTJ struct {
 	state unsafe.Pointer
 }
@@ -46,7 +48,7 @@ func (l *GPTJ) Predict(text string, opts ...PredictOption) (string, error) {
 	}
 	out := make([]byte, po.Tokens)
 
-	C.binding_model_prompt(input, l.state, (*C.char)(unsafe.Pointer(&out[0])), C.int(po.RepeatLastN), C.int(po.RepeatPenalty), C.int(po.ContextSize),
+	C.binding_model_prompt(input, l.state, (*C.char)(unsafe.Pointer(&out[0])), C.int(po.RepeatLastN), C.float(po.RepeatPenalty), C.int(po.ContextSize),
 		C.int(po.Tokens), C.int(po.TopK), C.float(po.TopP), C.float(po.Temperature), C.int(po.Batch), C.float(po.ContextErase))
 
 	res := C.GoString((*C.char)(unsafe.Pointer(&out[0])))

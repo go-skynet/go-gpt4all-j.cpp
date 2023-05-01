@@ -1,10 +1,8 @@
 # [![Go Reference](https://pkg.go.dev/badge/github.com/go-skynet/go-gpt4all-j.cpp.svg)](https://pkg.go.dev/github.com/go-skynet/go-gpt4all-j.cpp) go-gpt4all-j.cpp
 
-This is a go binding/implementation compatible with [GPT4ALL-J](https://github.com/nomic-ai/gpt4all).
+This is a go binding for [GPT4ALL-J](https://github.com/nomic-ai/gpt4all).
 
-This port is high level, avoiding token-by-token inferencing in order to be faster. Check out [this](https://about.sourcegraph.com/blog/go/gophercon-2018-adventures-in-cgo-performance) and [this](https://www.cockroachlabs.com/blog/the-cost-and-complexity-of-cgo/) write-ups which summarize the impact of a low-level interface which calls C functions from Go.
-
-If you are looking for an high-level OpenAI compatible API, check out [here](https://github.com/go-skynet/llama-cli).
+This was originally developed by [mudler](https://github.com/mudler) for the [LocalAI](https://github.com/go-skynet/LocalAI) project.
 
 ## Usage
 

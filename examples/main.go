@@ -36,16 +36,27 @@ func main() {
 	}
 	fmt.Printf("Model loaded successfully.\n")
 
+	l.SetTokenCallback(func(token string) bool {
+		fmt.Print(token)
+		return true
+	})
+
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
 		text := readMultiLineInput(reader)
 
+		text = `The prompt below is a question to answer, a task to complete, or a conversation to respond to; decide which and write an appropriate response.
+### Prompt:
+` + text + `
+### Response:`
+
+		fmt.Println(text)
 		res, err := l.Predict(text, gptj.SetTokens(tokens))
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("\ngolang: %s\n", res)
+		fmt.Printf("\nFROM golang: %s\n", res)
 
 		fmt.Printf("\n\n")
 	}

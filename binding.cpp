@@ -1,4 +1,3 @@
-#include "ggml.h"
 #include "gpt4all-j/llmodel/llmodel_c.h"
 #include "gpt4all-j/llmodel/llmodel.h"
 #include "gpt4all-j/llmodel/llama.cpp/llama.h"
@@ -7,8 +6,6 @@
 #include "gpt4all-j/llmodel/gptj.h"
 
 #include "binding.h"
-#include "llama.h"
-
 #include <cassert>
 #include <cmath>
 #include <cstdio>

@@ -16,7 +16,7 @@ extern unsigned char tokenCallback(void *, char *);
 void binding_model_prompt(const char *prompt, void* model,  void* state_pr, char* result);
 
 void* gptj_new_context( int repeat_last_n, int repeat_penalty, int n_ctx, int tokens, int top_k,
-                            float top_p, float temp, int n_batch) ;
+                            float top_p, float temp, int n_batch, float ctx_erase) ;
 #ifdef __cplusplus
 }
 #endif

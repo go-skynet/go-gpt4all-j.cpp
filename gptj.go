@@ -49,7 +49,7 @@ func (l *GPTJ) Predict(text string, opts ...PredictOption) (string, error) {
 	// float top_p, float temp, int n_batch) ;
 	//
 	ctx := C.gptj_new_context(C.int(po.RepeatLastN), C.int(po.RepeatPenalty), C.int(po.ContextSize),
-		C.int(po.Tokens), C.int(po.TopK), C.float(po.TopP), C.float(po.Temperature), C.int(po.Batch))
+		C.int(po.Tokens), C.int(po.TopK), C.float(po.TopP), C.float(po.Temperature), C.int(po.Batch), C.float(po.ContextErase))
 
 	C.binding_model_prompt(input, l.state, ctx, (*C.char)(unsafe.Pointer(&out[0])))
 

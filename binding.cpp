@@ -81,13 +81,14 @@ void gptj_free_ctx(void *state_ptr) {
 
 
 void* gptj_new_context( int repeat_last_n, int repeat_penalty, int n_ctx, int tokens, int top_k,
-                            float top_p, float temp, int n_batch) {
+                            float top_p, float temp, int n_batch,float ctx_erase) {
     llmodel_prompt_context* params = new llmodel_prompt_context;
     params->n_predict = tokens;
     params->repeat_last_n = repeat_last_n;
     params->repeat_penalty = repeat_penalty;
     params->n_ctx = n_ctx;
     params->top_k = top_k;
+    params->context_erase = ctx_erase;
     params->top_p = top_p;
     params->temp = temp;
     params->n_batch = n_batch;    

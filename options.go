@@ -2,18 +2,19 @@ package gptj
 
 type PredictOptions struct {
 	RepeatPenalty, ContextSize, RepeatLastN, Tokens, TopK, Batch int
-	TopP, Temperature                                            float64
+	TopP, Temperature, ContextErase                              float64
 }
 
 type PredictOption func(p *PredictOptions)
 
 var DefaultOptions PredictOptions = PredictOptions{
-	Tokens:      200,
-	TopK:        40,
-	TopP:        0.90,
-	Temperature: 0.96,
-	Batch:       9,
-	ContextSize: 1024,
+	Tokens:       200,
+	TopK:         40,
+	TopP:         0.90,
+	Temperature:  0.96,
+	Batch:        9,
+	ContextErase: 0.75,
+	ContextSize:  1024,
 }
 
 // SetTokens sets the number of tokens to generate.
@@ -34,6 +35,13 @@ func SetTopK(topk int) PredictOption {
 func SetTopP(topp float64) PredictOption {
 	return func(p *PredictOptions) {
 		p.TopP = topp
+	}
+}
+
+// SetContextErase sets the context erase %.
+func SetContextErase(ce float64) PredictOption {
+	return func(p *PredictOptions) {
+		p.ContextErase = ce
 	}
 }
 

@@ -45,21 +45,15 @@ func (l *GPTJ) Predict(text string, opts ...PredictOption) (string, error) {
 		po.Tokens = 99999999
 	}
 	out := make([]byte, po.Tokens)
-	// void* gptj_new_context( int repeat_last_n, int repeat_penalty, int n_ctx, int tokens, int top_k,
-	// float top_p, float temp, int n_batch) ;
-	//
-	ctx := C.gptj_new_context(C.int(po.RepeatLastN), C.int(po.RepeatPenalty), C.int(po.ContextSize),
+
+	C.binding_model_prompt(input, l.state, (*C.char)(unsafe.Pointer(&out[0])), C.int(po.RepeatLastN), C.int(po.RepeatPenalty), C.int(po.ContextSize),
 		C.int(po.Tokens), C.int(po.TopK), C.float(po.TopP), C.float(po.Temperature), C.int(po.Batch), C.float(po.ContextErase))
 
-	C.binding_model_prompt(input, l.state, ctx, (*C.char)(unsafe.Pointer(&out[0])))
-
 	res := C.GoString((*C.char)(unsafe.Pointer(&out[0])))
-
 	res = strings.TrimPrefix(res, " ")
 	res = strings.TrimPrefix(res, text)
 	res = strings.TrimPrefix(res, "\n")
 	res = strings.TrimSuffix(res, "<|endoftext|>")
-	C.gptj_free_ctx(ctx)
 
 	return res, nil
 }

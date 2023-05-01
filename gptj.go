@@ -24,7 +24,7 @@ type GPTJ struct {
 func New(model string, opts ...ModelOption) (*GPTJ, error) {
 	ops := NewModelOptions(opts...)
 
-	state := C.load_gptj_model(C.CString(model), C.int(ops.Threads))
+	state := C.binding_load_gptj_model(C.CString(model), C.int(ops.Threads))
 	if state == nil {
 		return nil, fmt.Errorf("failed loading model")
 	}
@@ -61,7 +61,7 @@ func (l *GPTJ) Predict(text string, opts ...PredictOption) (string, error) {
 }
 
 func (l *GPTJ) Free() {
-	C.llama_free_model(l.state)
+	C.binding_gptj_free_model(l.state)
 }
 
 func (l *GPTJ) SetTokenCallback(callback func(token string) bool) {
@@ -73,8 +73,8 @@ var (
 	callbacks = map[uintptr]func(string) bool{}
 )
 
-//export tokenCallback
-func tokenCallback(statePtr unsafe.Pointer, token *C.char) bool {
+//export bindingTokenCallback
+func bindingTokenCallback(statePtr unsafe.Pointer, token *C.char) bool {
 	m.Lock()
 	defer m.Unlock()
 

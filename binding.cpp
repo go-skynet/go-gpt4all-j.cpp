@@ -17,7 +17,7 @@
 #include <iostream>
 #include <unistd.h>
 
-void* load_gptj_model(const char *fname, int n_threads) {
+void* binding_load_gptj_model(const char *fname, int n_threads) {
     // load the model
     auto gptj = llmodel_gptj_create();
 
@@ -48,7 +48,7 @@ void binding_model_prompt( const char *prompt, void *m, char* result, int repeat
 
     auto lambda_response = [](int token_id, const char *responsechars) {
         res.append((char*)responsechars);
-        return !!tokenCallback(mm, (char*)responsechars);
+        return !!bindingTokenCallback(mm, (char*)responsechars);
 	};
 	
 	auto lambda_recalculate = [](bool is_recalculating) {
@@ -93,7 +93,7 @@ void binding_model_prompt( const char *prompt, void *m, char* result, int repeat
     free(prompt_context);
 }
 
-void llama_free_model(void *state_ptr) {
+void binding_gptj_free_model(void *state_ptr) {
     llmodel_model* ctx = (llmodel_model*) state_ptr;
     llmodel_llama_destroy(ctx);
 }
